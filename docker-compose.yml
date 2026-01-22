@@ -36,10 +36,12 @@ services:
       - "ov-cache:/home/ubuntu/.cache/ov:rw"
       - "ov-local-share:/home/ubuntu/.local/share/ov/:rw"
     privileged: true
+    shm_size: 1gb
     environment:
       - CUDA_VISIBLE_DEVICES=0
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_GPU_CAPABILITIES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility,graphics,display
       - PUID=0
       - PGID=0
       - TZ=Etc/UTC
@@ -47,6 +49,43 @@ services:
       - SUDO_PASSWORD=$VSCODE_PASSWORD #optional
       - DEFAULT_WORKSPACE=/config/workspace
       - KUBECONFIG=/kube/config
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: [gpu]
+
+  streaming:
+    container_name: streaming
+    restart: unless-stopped
+    network_mode: "host"
+    runtime: nvidia
+    build:
+      context: ./vscode
+      args:
+        KIT_APP_TEMPLATE_BRANCH: ${KIT_APP_TEMPLATE_BRANCH:-108.1}
+    volumes:
+      - 'shared:/kube'
+      - '/var/run/docker.sock:/var/run/docker.sock'
+      - "ov-cache:/home/ubuntu/.cache/ov:rw"
+      - "ov-local-share:/home/ubuntu/.local/share/ov/:rw"
+    privileged: true
+    shm_size: 1gb
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_GPU_CAPABILITIES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility,graphics,display
+      - PUID=0
+      - PGID=0
+      - TZ=Etc/UTC
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: [gpu]
 
   nginx:
     restart: unless-stopped
